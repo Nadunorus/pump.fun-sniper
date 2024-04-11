@@ -1,5 +1,4 @@
-# Project Name
-Pump.fun pool/bonding-curve sniper.
+### pump.fun simple bonding-curve sniper.
 
 ## Getting Started
 
