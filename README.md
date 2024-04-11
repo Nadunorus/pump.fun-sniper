@@ -8,6 +8,7 @@ Pump.fun pool/bonding-curve sniper.
 - Node.js and npm or yarn installed on your machine
 - A solana wallet/Base58 private key
 - RPC url of your Solana node.
+- (HIGHLY Recommended) JITO access.
 
 ### Installation
 
@@ -36,6 +37,13 @@ Pump.fun pool/bonding-curve sniper.
 Contributions are welcome! If you want to contribute to this project, feel free to fork the repository and submit a pull request.
 
 If you encounter any issues or have suggestions for improvements, please open an issue on GitHub.
+
+
+### Next Steps
+
+1. Geyser integration
+2. seperate commands and better command line workflow
+
 
 ## Tip address
 3Q9xRmnzMBv9jcKYA3pB2gQmK4RtuzUvjCRfJbw6PYWV
