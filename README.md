@@ -12,11 +12,10 @@ Pump.fun pool/bonding-curve sniper.
 ### Installation
 
 1. Clone the repository to your local machine:
-```git clone https://github.com/your-repo-name.git```
+```git clone https://github.com/iSyqozz/pump.fun-sniper.git```
 2.  Navigate to the project directory
-```cd <project-directory>```
 3. Install dependencies:
-```npm install```
+```npm install``` or ```yarn install```
 
 ### Configuration
 
