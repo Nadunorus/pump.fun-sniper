@@ -177,6 +177,8 @@ async function main() {
                 if (neededInstruction) { break };
             }
 
+            if (neededInstruction) { break };
+
             console.log(`${getCurrentTime()} No bonding curves found. Polling for new signatures...\n`);
             await sleep(500);
 
