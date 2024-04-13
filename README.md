@@ -6,7 +6,7 @@
 
 - Node.js and npm or yarn installed on your machine
 - A solana wallet/Base58 private key
-- HELIUS RPC Endpoint url .
+- RPC Endpoint url .
 - (HIGHLY Recommended) JITO access.
 
 ### Installation

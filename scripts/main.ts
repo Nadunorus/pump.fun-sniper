@@ -69,7 +69,7 @@ async function main() {
 
         //getting the amount to snipe with:
         let priorityFee: number = -1;
-        const inputtedPriorityFee = (await getUserInput("Enter Priority-fee in micro-lamports ('default' for default high fee): "));
+        const inputtedPriorityFee = (await getUserInput("Enter Priority-fee in micro-lamports ('default' for default fee <1,000,000>): "));
         if (inputtedPriorityFee.toUpperCase() != 'DEFAULT') {
             priorityFee = Number(inputtedPriorityFee);
             if (!priorityFee || priorityFee < 0) {

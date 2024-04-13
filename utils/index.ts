@@ -143,9 +143,9 @@ export async function getOptimalPriceAndBudget(hydratedTransaction: Transaction,
 }
 export async function ConstructOptimalTransaction(prevTx: Transaction, connection: Connection, fee: number): Promise<Transaction> {
 
-    const microLamports = fee == -1 ? await getPriorityFeeEstimateForTransaction(prevTx) : fee;
+    const microLamports = fee == -1 ? await 1_000_000 : fee;
     const units = 59_000 + getRandomNumber();
-    getComputeUnitsForTransaction(prevTx, connection);
+    //getComputeUnitsForTransaction(prevTx, connection);
     //console.log(`Compute units to consume: ${units}`);
     //console.log(`Micro-lamports per compute unit: ${fee}\n`)
 
@@ -245,8 +245,6 @@ export async function buildBundle(
     }
     return buildBundle;
 }
-
-
 
 
 export const onBundleResult = (c: SearcherClient): Promise<number> => {
