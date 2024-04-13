@@ -1,4 +1,4 @@
-import { send_transactions, validateSolAddress, getKeypairFromBs58, generate_transactions, serializeTransactions, getComputeUnitsForTransaction, getPriorityFeeEstimateForTransaction, getOptimalPriceAndBudget, ConstructOptimalTransaction, getRandomNumber, buildBundle, onBundleResult } from "../utils";
+import { send_transactions, validateSolAddress, getKeypairFromBs58, generate_transactions, serializeTransactions, getComputeUnitsForTransaction, getPriorityFeeEstimateForTransaction, getOptimalPriceAndBudget, ConstructOptimalTransaction, getRandomNumber, buildBundle, onBundleResult, getCurrentTime } from "../utils";
 import idl from "../constants/idl.json";
 import { TransactionInstruction, ComputeBudgetProgram, Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SYSVAR_RENT_PUBKEY, SystemProgram, Transaction, sendAndConfirmRawTransaction, PartiallyDecodedInstruction, ParsedInstruction, ParsedInnerInstruction, ParsedTransaction, ParsedTransactionWithMeta, TransactionMessage, VersionedTransaction } from "@solana/web3.js"
 import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
@@ -129,6 +129,18 @@ async function main() {
                 try {
                     const sig = parsed_sigs[i];
                     if (!sig) { continue }
+
+                    const blockTime = sig.blockTime;
+                    const currentTime = Math.floor(Date.now() / 1000);
+
+
+                    //transaction should should be processed within one minute of detecting it here
+                    //const currentTime = Math.floor(Date.now() / 1000);
+                    //const blockTime = sig?.blockTime;
+                    //if (!blockTime || currentTime - blockTime < 60) {
+                    //    console.log('Old bonding curve detected. Ignoring...')
+                    //    continue
+                    //};
                     //@ts-ignore
 
                     const instructions = (sig.transaction.message.instructions);
@@ -145,9 +157,13 @@ async function main() {
                             const hasNeededAccounts = ix.accounts.length == 12;
 
                             if (hasNeededProgramId && hasNeededAccounts) {
-                                neededInstruction = ix;
-                                parsedSig = sig
-                                break
+                                if (!blockTime || currentTime - blockTime > 60) {
+                                    console.log(`${getCurrentTime()} Old Bonding Curve detected, Ignoring stale pool...`)
+                                }else {
+                                    neededInstruction = ix;
+                                    parsedSig = sig
+                                    break
+                                }
                             }
                         } catch (e) {
                             continue
@@ -161,10 +177,11 @@ async function main() {
                 if (neededInstruction) { break };
             }
 
-            console.log('No bonding curves found. Polling for new signatures...');
+            console.log(`${getCurrentTime()} No bonding curves found. Polling for new signatures...\n`);
             await sleep(500);
 
         }
+
 
         if (!neededInstruction) { return }
 
@@ -172,7 +189,6 @@ async function main() {
 
         //initializing program
         const program = new Program(idl as anchor.Idl, programID, new anchor.AnchorProvider(connection, new NodeWallet(signerKeypair), anchor.AnchorProvider.defaultOptions()));
-        program.coder
 
 
         //@ts-ignore
@@ -205,6 +221,10 @@ async function main() {
         const virtualTokenPrice = adjustedVirtualSolReserves / adjustedVirtualTokenReserves;
         const finalAmount = (numberAmount / virtualTokenPrice);
 
+
+        //console.log(adjustedVirtualSolReserves);
+        //console.log(adjustedVirtualTokenReserves);
+        //
         //console.log(finalAmount);
         //console.log(virtualTokenPrice);
         //console.log(virtualTokenReserves);
@@ -212,7 +232,6 @@ async function main() {
         //console.log(decimals);
         //console.log(mint);
         //console.log(bondingCurve);
-
         //console.log(finalAmount);
 
 
