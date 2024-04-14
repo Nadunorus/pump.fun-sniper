@@ -4,10 +4,10 @@
 
 ### Prerequisites
 
-- Node.js and npm or yarn installed on your machine
-- A solana wallet/Base58 private key
+- Node.js and npm or yarn installed on your machine.
+- A solana wallet/Base58 private key.
 - RPC Endpoint url .
-- (HIGHLY Recommended) JITO access.
+- JITO access.
 
 ### Installation
 
@@ -28,8 +28,6 @@
 ```npm run start```
 2. Enter Wallet Address to track, amount and maximum amount in SOL.
 3. Enter Priority fees (0 for default high priority fees).
-4. (RECOMMENDED) use JITO bundles option, in this case, fill in the needed variables in the .env file.
-
 
 ### Contribution
 
@@ -45,5 +43,4 @@ If you encounter any issues or have suggestions for improvements, please open an
 
 
 ## Tip address
-3Q9xRmnzMBv9jcKYA3pB2gQmK4RtuzUvjCRfJbw6PYWV
-<333
+3Q9xRmnzMBv9jcKYA3pB2gQmK4RtuzUvjCRfJbw6PYWV <333

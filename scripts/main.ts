@@ -1,14 +1,11 @@
-import { send_transactions, validateSolAddress, getKeypairFromBs58, generate_transactions, serializeTransactions, getComputeUnitsForTransaction, getPriorityFeeEstimateForTransaction, getOptimalPriceAndBudget, ConstructOptimalTransaction, getRandomNumber, buildBundle, onBundleResult, getCurrentTime } from "../utils";
+import { validateSolAddress, getKeypairFromBs58, ConstructOptimalTransaction, getRandomNumber, buildBundle, onBundleResult, getCurrentDateTime } from "../utils";
 import idl from "../constants/idl.json";
-import { TransactionInstruction, ComputeBudgetProgram, Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SYSVAR_RENT_PUBKEY, SystemProgram, Transaction, sendAndConfirmRawTransaction, PartiallyDecodedInstruction, ParsedInstruction, ParsedInnerInstruction, ParsedTransaction, ParsedTransactionWithMeta, TransactionMessage, VersionedTransaction } from "@solana/web3.js"
-import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
+import { TransactionInstruction, Connection, LAMPORTS_PER_SOL, PublicKey, SYSVAR_RENT_PUBKEY, SystemProgram, Transaction, PartiallyDecodedInstruction, ParsedInstruction, ParsedTransactionWithMeta, } from "@solana/web3.js"
+import { TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
-import fs from "fs";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
-import readline from "readline";
-import bs58 from "bs58";
 import dotenv from "dotenv";
 import { parseSignatures } from "../utils";
 
@@ -19,6 +16,7 @@ import { searcherClient } from "jito-ts/dist/sdk/block-engine/searcher";
 
 
 process.removeAllListeners('warning')
+dotenv.config();
 
 
 async function main() {
@@ -29,17 +27,47 @@ async function main() {
         const MEMO_PROGRAM_ID = 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'
 
 
-        //loading env variables from .env file
-        dotenv.config();
-        const pk = process.env.SIGNER_PRIVATE_KEY;
-        const url = process.env.RPC_URL;
-
-
-        if (!pk || !url) {
-            console.log('missing required environment variables');
-            console.log('please populate .env file');
+        const pk = process.env.SIGNER_PRIVATE_KEY as string;
+        if (!pk || pk == '<YOUR SIGNER KEYPAIR HERE>') {
+            console.log('missing signer keypair');
+            console.log('please fill it in .env file');
             return
         }
+
+        const url = process.env.RPC_URL as string;
+        if (!url || url == '<YOUR RPC URL HERE>') {
+            console.log('missing rpc endpoint');
+            console.log('please fill it in .env file');
+            return
+        }
+
+        const jitoAuthPrivateKey = process.env.JITO_AUTH_PRIVATE_KEY as string;
+        if (!jitoAuthPrivateKey || jitoAuthPrivateKey == '<YOUR AUTH KEYPAIR HERE>') {
+            console.log('Missing jito authentication private key');
+            console.log('please fill it in the .env file.');
+            return
+        }
+
+        const blockEngineUrl = process.env.BLOCK_ENGINE_URL as string;
+        if (!blockEngineUrl) {
+            console.log('Missing block engine url');
+            console.log('please fill it in the .env file.');
+            return
+        }
+
+        const envTip = process.env.JITO_TIP as string;
+        const jitoTip = Number(envTip);
+        if (!jitoTip) {
+            console.log('invalid jito tip');
+            console.log('please fix it in the .env file.');
+            return
+        }
+
+        const maxRetriesString = process.env.MAX_RETRIES as string;
+        const maxRetries = Number(maxRetriesString);
+
+
+
 
         const connection = new Connection(process.env.RPC_URL as string, { commitment: 'confirmed', });
         const signerKeypair = getKeypairFromBs58(pk);
@@ -78,23 +106,8 @@ async function main() {
             }
         }
 
-
-        //using jito block engine:
-        let useJito: boolean = false;
-        const isUsingJito = (await getUserInput("Use Jito block engine? (y/n): ")).toUpperCase();
-        if (isUsingJito == 'Y') {
-            useJito = true;
-        } else if (isUsingJito == "N") {
-            useJito = false;
-        } else {
-            console.log('invalid input');
-            return
-        }
-
         console.log('\n');
         console.log(`Scanning wallet ${inputtedWallet}\n`)
-
-
 
         //caching to avoid accidental duplicate on-chain reads 
         //var cache: Set<string> = new Set();
@@ -133,16 +146,7 @@ async function main() {
                     const blockTime = sig.blockTime;
                     const currentTime = Math.floor(Date.now() / 1000);
 
-
-                    //transaction should should be processed within one minute of detecting it here
-                    //const currentTime = Math.floor(Date.now() / 1000);
-                    //const blockTime = sig?.blockTime;
-                    //if (!blockTime || currentTime - blockTime < 60) {
-                    //    console.log('Old bonding curve detected. Ignoring...')
-                    //    continue
-                    //};
                     //@ts-ignore
-
                     const instructions = (sig.transaction.message.instructions);
                     for (let ix of instructions) {
                         try {
@@ -157,9 +161,10 @@ async function main() {
                             const hasNeededAccounts = ix.accounts.length == 12;
 
                             if (hasNeededProgramId && hasNeededAccounts) {
+                                //transaction should should be processed within one minute of detecting it here
                                 if (!blockTime || currentTime - blockTime > 60) {
-                                    console.log(`${getCurrentTime()} Old Bonding Curve detected, Ignoring stale pool...`)
-                                }else {
+                                    console.log(`${getCurrentDateTime()} Old Bonding Curve detected, Ignoring stale pool...`)
+                                } else {
                                     neededInstruction = ix;
                                     parsedSig = sig
                                     break
@@ -179,7 +184,7 @@ async function main() {
 
             if (neededInstruction) { break };
 
-            console.log(`${getCurrentTime()} No bonding curves found. Polling for new signatures...\n`);
+            console.log(`${getCurrentDateTime()} No bonding curves found. Polling for new signatures...\n`);
             await sleep(500);
 
         }
@@ -187,7 +192,7 @@ async function main() {
 
         if (!neededInstruction) { return }
 
-        console.log(`\nFound new pool/bonding-curve, Sniping with ${numberAmount} SOL..`);
+        console.log(`\nFound new pool/bonding-curve, Sniping with ${numberAmount} SOL..\n\n`);
 
         //initializing program
         const program = new Program(idl as anchor.Idl, programID, new anchor.AnchorProvider(connection, new NodeWallet(signerKeypair), anchor.AnchorProvider.defaultOptions()));
@@ -237,7 +242,9 @@ async function main() {
         //console.log(finalAmount);
 
 
-        while (true) {
+
+        let retries = 0;
+        while (retries <= (maxRetries ? Math.max(1, maxRetries) : 5)) {
 
             //creating tx;
             const tx = new Transaction();
@@ -292,75 +299,39 @@ async function main() {
 
             finalTx.sign(signerKeypair);
 
-
-            if (useJito) {
-
-                const jitoAuthPrivateKey = process.env.JITO_AUTH_PRIVATE_KEY as string;
-                if (!jitoAuthPrivateKey) {
-                    console.log('Missing jito authentication private key');
-                    console.log('please fill it in the .env file.');
-                    return
-                }
-
-                const blockEngineUrl = process.env.BLOCK_ENGINE_URL as string;
-                if (!blockEngineUrl) {
-                    console.log('Missing block engine url');
-                    console.log('please fill it in the .env file.');
-                    return
-                }
-
-                const envTip = process.env.JITO_TIP as string;
-                const jitoTip = Number(envTip);
-                if (!jitoTip) {
-                    console.log('invalid jito tip');
-                    console.log('please fix it in the .env file.');
-                    return
-                }
-
-                const jitoAuthKeypair = getKeypairFromBs58(jitoAuthPrivateKey);
+            const jitoAuthKeypair = getKeypairFromBs58(jitoAuthPrivateKey);
 
 
-                const bundleTransactionLimit = 1;
-                const search = searcherClient(blockEngineUrl, jitoAuthKeypair);
+            const bundleTransactionLimit = 1;
+            const search = searcherClient(blockEngineUrl, jitoAuthKeypair);
 
-                const bundleCtx = await buildBundle(
-                    search,
-                    bundleTransactionLimit,
-                    finalTx,
-                    signerKeypair,
-                    jitoTip,
-                );
+            const bundleCtx = await buildBundle(
+                search,
+                bundleTransactionLimit,
+                finalTx,
+                signerKeypair,
+                jitoTip,
+            );
 
-                if (bundleCtx != null) {
-                    const bundleResult = await onBundleResult(search);
-                    if (bundleResult) {
-                        console.log('Successful! ');
-                        process.exit(0);
-                    } else {
-                        console.log('Failed to send Bundle, retrying... (ctrl + c to abort)');
-                        continue
-                    }
-                } else {
-                    throw new Error
-                }
-
-            } else {
-                const res = await send_transactions(Array(1).fill(finalTx), connection);
-
-                const isSuccessful = (res.filter(e => e != 'failed'));
-
-                //console.log(isSuccessful);
-
-                if (isSuccessful.length == 0) {
-                    console.log('Failed to send Transaction, retrying.. (ctrl + c to abort)')
-                    continue
-                } else {
-                    console.log('Transaction Successful with signature: ', isSuccessful[0]);
+            if (bundleCtx != null) {
+                const bundleResult = await onBundleResult(search);
+                if (bundleResult[0]) {
+                    console.log('Successful! ');
                     process.exit(0);
+                } else {
+                    console.log('Failed to send Bundle, retrying... (ctrl + c to abort)');
+                    console.log('Retries left: ', maxRetries - retries);
+                    bundleResult[1]()
+                    retries += 1;
+                    continue
                 }
+            } else {
+                throw new Error
             }
-
         }
+
+        console.log('\nMax Retries Reached.');
+        process.exit(1);
 
     } catch (e) {
         console.log(e);

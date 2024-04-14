@@ -58,12 +58,13 @@ export function getRandomNumber() {
 }
 
 
-export function getCurrentTime(): string {
+export function getCurrentDateTime(): string {
     const now = new Date();
+    const date = now.toISOString().split('T')[0];
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const seconds = String(now.getSeconds()).padStart(2, '0');
-    return `[${hours}:${minutes}:${seconds}]`;
+    return `[${date} ${hours}:${minutes}:${seconds}]`;
 }
 
 export function getKeypairFromBs58(bs58String: string): Keypair {
@@ -222,7 +223,7 @@ export async function buildBundle(
     const tipIx = SystemProgram.transfer({
         fromPubkey: signer.publicKey,
         toPubkey: tipAccount,
-        lamports: Math.max(Math.floor(tip * LAMPORTS_PER_SOL), 5000),
+        lamports: Math.max(Math.floor(tip * LAMPORTS_PER_SOL), 5001),
     })
 
     //creating versionedTx
@@ -255,24 +256,20 @@ export async function buildBundle(
 }
 
 
-export const onBundleResult = (c: SearcherClient): Promise<number> => {
-    let first = 0;
-    let isResolved = false;
+export const onBundleResult = (c: SearcherClient): Promise<[number, any]> => {
+
 
     return new Promise((resolve) => {
-        // Set a timeout to reject the promise if no bundle is accepted within 5 seconds
-        setTimeout(() => {
-            resolve(first);
-            isResolved = true
-        }, 30000);
+
+        let state = 0;
+        let isResolved = false;
 
 
-        c.onBundleResult(
+        const listener = c.onBundleResult(
             //@ts-ignore
             (result) => {
 
-                if (isResolved) return first;
-                // clearTimeout(timeout); // Clear the timeout if a bundle is accepted
+                if (isResolved) return state;
 
 
                 const bundleId = result.bundleId;
@@ -290,9 +287,10 @@ export const onBundleResult = (c: SearcherClient): Promise<number> => {
                             " Slot: ",
                             result?.accepted?.slot
                         );
-                        first += 1;
+                        state += 1;
                         isResolved = true;
-                        resolve(first); // Resolve with 'first' when a bundle is accepted
+                        //listener()
+                        resolve([state, listener]); // Resolve with 'first' when a bundle is accepted
                     }
 
                     if (isRejected) {
@@ -315,11 +313,8 @@ export const onBundleResult = (c: SearcherClient): Promise<number> => {
                             console.log('\n')
                             console.log(isRejected.droppedBundle);
                         }
-
-                        resolve(0);
-                        //resolve(0);
-                        //console.log("bundle is Rejected:", result);
-                        // Do not resolve or reject the promise here
+                        isResolved = true;
+                        resolve([state, listener]);
                     }
 
                 }
@@ -330,6 +325,16 @@ export const onBundleResult = (c: SearcherClient): Promise<number> => {
                 // Do not reject the promise here
             }
         );
+
+
+        // Set a timeout to reject the promise if no bundle is accepted within 30 seconds
+        //setTimeout(() => {
+        //    listener();
+        //    resolve(first);
+        //    isResolved = true
+        //}, 30000);
+
+
     });
 };
 
