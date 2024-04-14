@@ -87,10 +87,12 @@ async function main() {
             return;
         }
 
+        const minMaxAmount = numberAmount + (numberAmount * 0.15);
+
         //getting the amount to snipe with:
-        const inputtedMaxSolCost = (await getUserInput("Enter the maximum amount of SOL accounting to slippage: "));
+        const inputtedMaxSolCost = (await getUserInput(`Enter the maximum amount of SOL accounting to slippage (min ${minMaxAmount.toFixed(4)} SOL): `));
         const maxSolCost = Number(inputtedMaxSolCost);
-        if (!maxSolCost || maxSolCost < numberAmount) {
+        if (!maxSolCost || maxSolCost < minMaxAmount) {
             console.log('invalid maximum sol amount');
             return;
         }
