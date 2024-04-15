@@ -11,7 +11,12 @@ import { parseSignatures } from "../utils";
 import { sleep, getUserInput } from "../utils";
 import { searcherClient } from "jito-ts/dist/sdk/block-engine/searcher";
 
-
+import {
+    programID,
+    MEMO_PROGRAM_ID,
+    feeRecipient,
+    EVENT_AUTH,
+} from "../constants"
 
 
 process.removeAllListeners('warning')
@@ -21,11 +26,6 @@ dotenv.config();
 async function main() {
 
     try {
-
-        const programID = "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P";
-        const MEMO_PROGRAM_ID = 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr';
-        const EVENT_AUTH = "Ce6TQqeHC9p8KetsN6JsjHK7UTZk7nasjjnr7XxXp9F1";
-
 
         const pk = process.env.SIGNER_PRIVATE_KEY as string;
         if (!pk || pk == '<YOUR SIGNER KEYPAIR HERE>') {
@@ -211,7 +211,6 @@ async function main() {
         const globalState = accounts[4];
         const user = signerKeypair.publicKey;
         const userAta = getAssociatedTokenAddressSync(mint, user, true);
-        const feeRecipient = (await program.account.global.fetch(globalState)).feeRecipient as PublicKey;
         const signerTokenAccount = getAssociatedTokenAddressSync(mint, user, true, TOKEN_PROGRAM_ID,);
         const account = await connection.getAccountInfo(signerTokenAccount, 'processed');
 
