@@ -79,7 +79,7 @@ async function main() {
             return;
         }
 
-        //getting the amount to snipe with:
+        //getting the amount to swap with:
         const inputtedAmount = (await getUserInput("Enter the amount of SOL to snipe with: "));
         const numberAmount = Number(inputtedAmount);
         if (!numberAmount) {
@@ -89,7 +89,7 @@ async function main() {
 
         const minMaxAmount = numberAmount + (numberAmount * 0.15);
 
-        //getting the amount to snipe with:
+        //getting max amount to swap with:
         const inputtedMaxSolCost = (await getUserInput(`Enter the maximum amount of SOL accounting to slippage (min ${roundUpToNonZeroString(parseFloat((minMaxAmount).toFixed(6)))} SOL): `));
         const maxSolCost = Number(inputtedMaxSolCost);
         if (!maxSolCost || maxSolCost < minMaxAmount) {
@@ -97,7 +97,7 @@ async function main() {
             return;
         }
 
-        //getting the amount to snipe with:
+        //getting the micro lamports for compute budget price:
         let priorityFee: number = -1;
         const inputtedPriorityFee = (await getUserInput("Enter Priority-fee in micro-lamports ('default' for default fee <1,000,000>): "));
         if (inputtedPriorityFee.toUpperCase() != 'DEFAULT') {
@@ -214,8 +214,12 @@ async function main() {
         const signerTokenAccount = getAssociatedTokenAddressSync(mint, user, true, TOKEN_PROGRAM_ID,);
         const account = await connection.getAccountInfo(signerTokenAccount, 'processed');
 
-        const bondingCurveData = await program.account.bondingCurve.fetch(bondingCurve);
-        const mintData = await connection.getParsedAccountInfo(mint);
+
+        const [bondingCurveData, mintData] = await Promise.all([
+            program.account.bondingCurve.fetch(bondingCurve),
+            await connection.getParsedAccountInfo(mint),
+        ]);
+
 
         //@ts-ignore
         const decimals = mintData.value?.data.parsed.info.decimals;
