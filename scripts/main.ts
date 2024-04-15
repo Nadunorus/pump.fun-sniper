@@ -212,12 +212,12 @@ async function main() {
         const user = signerKeypair.publicKey;
         const userAta = getAssociatedTokenAddressSync(mint, user, true);
         const signerTokenAccount = getAssociatedTokenAddressSync(mint, user, true, TOKEN_PROGRAM_ID,);
-        const account = await connection.getAccountInfo(signerTokenAccount, 'processed');
 
 
-        const [bondingCurveData, mintData] = await Promise.all([
+        const [bondingCurveData, mintData, account] = await Promise.all([
             program.account.bondingCurve.fetch(bondingCurve),
-            await connection.getParsedAccountInfo(mint),
+            connection.getParsedAccountInfo(mint),
+            connection.getAccountInfo(signerTokenAccount, 'processed')
         ]);
 
 
