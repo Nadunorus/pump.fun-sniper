@@ -1,4 +1,4 @@
-import { validateSolAddress, getKeypairFromBs58, ConstructOptimalTransaction, getRandomNumber, buildBundle, onBundleResult, getCurrentDateTime } from "../utils";
+import { validateSolAddress, getKeypairFromBs58, ConstructOptimalTransaction, getRandomNumber, buildBundle, onBundleResult, getCurrentDateTime, roundUpToNonZeroString } from "../utils";
 import idl from "../constants/idl.json";
 import { TransactionInstruction, Connection, LAMPORTS_PER_SOL, PublicKey, SYSVAR_RENT_PUBKEY, SystemProgram, Transaction, PartiallyDecodedInstruction, ParsedInstruction, ParsedTransactionWithMeta, } from "@solana/web3.js"
 import { TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
@@ -8,7 +8,6 @@ import { BN } from "@coral-xyz/anchor";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import dotenv from "dotenv";
 import { parseSignatures } from "../utils";
-
 import { sleep, getUserInput } from "../utils";
 import { searcherClient } from "jito-ts/dist/sdk/block-engine/searcher";
 
@@ -24,7 +23,8 @@ async function main() {
     try {
 
         const programID = "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P";
-        const MEMO_PROGRAM_ID = 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'
+        const MEMO_PROGRAM_ID = 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr';
+        const EVENT_AUTH = "Ce6TQqeHC9p8KetsN6JsjHK7UTZk7nasjjnr7XxXp9F1";
 
 
         const pk = process.env.SIGNER_PRIVATE_KEY as string;
@@ -90,7 +90,7 @@ async function main() {
         const minMaxAmount = numberAmount + (numberAmount * 0.15);
 
         //getting the amount to snipe with:
-        const inputtedMaxSolCost = (await getUserInput(`Enter the maximum amount of SOL accounting to slippage (min ${minMaxAmount.toFixed(4)} SOL): `));
+        const inputtedMaxSolCost = (await getUserInput(`Enter the maximum amount of SOL accounting to slippage (min ${roundUpToNonZeroString(parseFloat((minMaxAmount).toFixed(6)))} SOL): `));
         const maxSolCost = Number(inputtedMaxSolCost);
         if (!maxSolCost || maxSolCost < minMaxAmount) {
             console.log('invalid maximum sol amount');
@@ -160,7 +160,7 @@ async function main() {
 
 
                             //@ts-ignore
-                            const hasNeededAccounts = ix.accounts.length == 12;
+                            const hasNeededAccounts = ix.accounts.length == 14;
 
                             if (hasNeededProgramId && hasNeededAccounts) {
                                 //transaction should should be processed within one minute of detecting it here
@@ -262,7 +262,6 @@ async function main() {
                 )
             };
 
-
             const snipeIx = await program.methods.buy(
                 new BN((finalAmount * (10 ** decimals))),
                 new BN(maxSolCost * LAMPORTS_PER_SOL),
@@ -277,6 +276,8 @@ async function main() {
                 systemProgram: SystemProgram.programId,
                 tokenProgram: TOKEN_PROGRAM_ID,
                 rent: SYSVAR_RENT_PUBKEY,
+                eventAuthority: EVENT_AUTH,
+                program: program.programId,
             }).instruction();
             tx.add(snipeIx);
 

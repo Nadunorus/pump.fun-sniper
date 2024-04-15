@@ -9,6 +9,7 @@ import { isError } from "jito-ts/dist/sdk/block-engine/utils";
 import { BundleResult } from "jito-ts/dist/gen/block-engine/bundle";
 import { searcherClient } from 'jito-ts/dist/sdk/block-engine/searcher';
 import { Bundle } from "jito-ts/dist/sdk/block-engine/types";
+import * as anchor from '@coral-xyz/anchor';
 
 export async function send_transactions(
     Transactions: Transaction[],
@@ -65,6 +66,22 @@ export function getCurrentDateTime(): string {
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const seconds = String(now.getSeconds()).padStart(2, '0');
     return `[${date} ${hours}:${minutes}:${seconds}]`;
+}
+
+export function roundUpToNonZeroString(num: number): string {
+    const numString = num.toString();
+    const decimalIndex = numString.indexOf('.');
+
+    if (decimalIndex === -1) {
+        return numString;
+    } else {
+        const integerPart = numString.substring(0, decimalIndex);
+        
+        let decimalPart = numString.substring(decimalIndex + 1);
+        decimalPart = decimalPart.replace(/0+$/, '');
+
+        return decimalPart === '' ? integerPart : integerPart + '.' + decimalPart;
+    }
 }
 
 export function getKeypairFromBs58(bs58String: string): Keypair {
@@ -338,3 +355,62 @@ export const onBundleResult = (c: SearcherClient): Promise<[number, any]> => {
     });
 };
 
+
+//metadata pda
+
+export function getMetadataPda(mint: PublicKey) {
+    const [metadataPda, _] = PublicKey.findProgramAddressSync(
+        [
+            Buffer.from("metadata"),
+            new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s').toBuffer(),
+            mint.toBuffer(),
+        ],
+        new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s'),
+    )
+    return metadataPda
+}
+
+//master edition pda 
+export function getMasterEditionPda(mint: PublicKey) {
+    const [masterEditionPda, _] = PublicKey.findProgramAddressSync(
+        [
+            Buffer.from("metadata"),
+            new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s').toBuffer(),
+            mint.toBuffer(),
+            Buffer.from("edition"),
+        ],
+        new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s'),
+    )
+    return masterEditionPda
+}
+
+//token record pda 
+export function getTokenRecord(mint: PublicKey, ata: PublicKey) {
+    const [TokenRecord, _] = PublicKey.findProgramAddressSync(
+        [
+            Buffer.from("metadata"),
+            new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s').toBuffer(),
+            mint.toBuffer(),
+            Buffer.from("token_record"),
+            ata.toBuffer(),
+        ],
+        new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s'),
+    )
+    return TokenRecord
+}
+
+//master edition pda 
+export function getMetadataDelegateRecord(mint: PublicKey, ata: PublicKey, delegate: PublicKey, updateAuthority: PublicKey,) {
+    const [pda, _] = PublicKey.findProgramAddressSync(
+        [
+            anchor.utils.bytes.utf8.encode("metadata"),
+            new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s').toBuffer(),
+            mint.toBuffer(),
+            anchor.utils.bytes.utf8.encode("update"),
+            updateAuthority.toBuffer(),
+            delegate.toBuffer(),
+        ],
+        new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s'),
+    )
+    return pda
+}
